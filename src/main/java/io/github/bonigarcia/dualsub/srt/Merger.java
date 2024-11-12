@@ -20,12 +20,11 @@ import io.github.bonigarcia.dualsub.util.I18N;
 
 import java.io.File;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,27 +104,19 @@ public class Merger {
 	}
 
 	public String getMergedFileName(Srt subs1, Srt subs2) {
-		String mergedFileName = "";
-		if (translate) {
-			Srt srt = subs1.getFileName() == null ? subs2 : subs1;
-			File file = new File(srt.getFileName());
-			String fileName = file.getName();
-			int i = fileName.lastIndexOf('.');
-			i = i == -1 ? fileName.length() - 1 : i;
-			String extension = fileName.substring(i);
-			mergedFileName = getOutputFolder() + File.separator
-					+ fileName.substring(0, i);
-			if (merge) {
-				mergedFileName += " " + I18N.getText("Merger.merged.text");
-			} else {
-				mergedFileName += " " + I18N.getText("Merger.translated.text");
-			}
-			mergedFileName += extension;
-		} else {
-			mergedFileName = getOutputFolder() + File.separator
-					+ compareNames(subs1.getFileName(), subs2.getFileName());
+		if (!translate) {
+			return getOutputFolder() + File.separator + compareNames(subs1.getFileName(), subs2.getFileName());
 		}
-		return mergedFileName;
+
+		Srt srt = subs1.getFileName() == null ? subs2 : subs1;
+		File file = new File(srt.getFileName());
+		String fileName = file.getName();
+		int i = fileName.lastIndexOf('.');
+		i = i == -1 ? fileName.length() - 1 : i;
+		return getOutputFolder() + File.separator
+				+ fileName.substring(0, i)
+				+ " " + I18N.getText(merge ? "Merger.merged.text" : "Merger.translated.text")
+				+ fileName.substring(i);
 	}
 
 	/**
@@ -142,15 +133,13 @@ public class Merger {
 		str2 = str2.substring(str2.lastIndexOf(File.separator) + 1).replaceAll(
 				SrtUtils.SRT_EXT, "");
 
-		List<String> set1 = new ArrayList<String>(Arrays.asList(str1
-				.split(" |_|\\.")));
-		List<String> set2 = new ArrayList<String>(Arrays.asList(str2
-				.split(" |_|\\.")));
+		List<Character> set1 = str1.chars().mapToObj( c -> (char)c).collect(Collectors.toList());
+		List<Character> set2 = str2.chars().mapToObj( c -> (char)c).collect(Collectors.toList());
 		set1.retainAll(set2);
 
 		StringBuilder sb = new StringBuilder();
-		for (String s : set1) {
-			sb.append(s).append(SrtUtils.getSpace());
+		for (Character s : set1) {
+			sb.append(s);
 		}
 		String finalName = sb.toString().trim();
 		if (finalName.isEmpty()) {
